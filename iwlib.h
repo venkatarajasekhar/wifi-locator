@@ -455,7 +455,122 @@ iw_sockets_close(int	skfd)
 {
   close(skfd);
 }
+struct	iw15_range
+{
+	__u32		throughput;
+	__u32		min_nwid;
+	__u32		max_nwid;
+	__u16		num_channels;
+	__u8		num_frequency;
+	struct iw_freq	freq[IW15_MAX_FREQUENCIES];
+	__s32		sensitivity;
+	struct iw_quality	max_qual;
+	__u8		num_bitrates;
+	__s32		bitrate[IW15_MAX_BITRATES];
+	__s32		min_rts;
+	__s32		max_rts;
+	__s32		min_frag;
+	__s32		max_frag;
+	__s32		min_pmp;
+	__s32		max_pmp;
+	__s32		min_pmt;
+	__s32		max_pmt;
+	__u16		pmp_flags;
+	__u16		pmt_flags;
+	__u16		pm_capa;
+	__u16		encoding_size[IW15_MAX_ENCODING_SIZES];
+	__u8		num_encoding_sizes;
+	__u8		max_encoding_tokens;
+	__u16		txpower_capa;
+	__u8		num_txpower;
+	__s32		txpower[IW15_MAX_TXPOWER];
+	__u8		we_version_compiled;
+	__u8		we_version_source;
+	__u16		retry_capa;
+	__u16		retry_flags;
+	__u16		r_time_flags;
+	__s32		min_retry;
+	__s32		max_retry;
+	__s32		min_r_time;
+	__s32		max_r_time;
+	struct iw_quality	avg_qual;
+};
 
+/*
+ * Union for all the versions of iwrange.
+ * Fortunately, I mostly only add fields at the end, and big-bang
+ * reorganisations are few.
+ */
+union	iw_range_raw
+{
+	struct iw15_range	range15;	/* WE 9->15 */
+	struct iw_range		range;		/* WE 16->current */
+};
+
+/*
+ * Offsets in iw_range struct
+ */
+#define iwr15_off(f)	( ((char *) &(((struct iw15_range *) NULL)->f)) - \
+			  (char *) NULL)
+#define iwr_off(f)	( ((char *) &(((struct iw_range *) NULL)->f)) - \
+			  (char *) NULL)
+
+/*
+ * Union to perform unaligned access when working around alignement issues
+ */
+union	iw_align_u16
+{
+	__u16		value;
+	unsigned char	byte[2];
+};
+
+/**************************** VARIABLES ****************************/
+
+/* Modes as human readable strings */
+const char * const iw_operation_mode[] = { "Auto",
+					"Ad-Hoc",
+					"Managed",
+					"Master",
+					"Repeater",
+					"Secondary",
+					"Monitor",
+					"Unknown/bug" };
+
+/* Modulations as human readable strings */
+const struct iw_modul_descr	iw_modul_list[] = {
+  /* Start with aggregate types, so that they display first */
+  { IW_MODUL_11AG, "11ag",
+    "IEEE 802.11a + 802.11g (2.4 & 5 GHz, up to 54 Mb/s)" },
+  { IW_MODUL_11AB, "11ab",
+    "IEEE 802.11a + 802.11b (2.4 & 5 GHz, up to 54 Mb/s)" },
+  { IW_MODUL_11G, "11g", "IEEE 802.11g (2.4 GHz, up to 54 Mb/s)" },
+  { IW_MODUL_11A, "11a", "IEEE 802.11a (5 GHz, up to 54 Mb/s)" },
+  { IW_MODUL_11B, "11b", "IEEE 802.11b (2.4 GHz, up to 11 Mb/s)" },
+
+  /* Proprietary aggregates */
+  { IW_MODUL_TURBO | IW_MODUL_11A, "turboa",
+    "Atheros turbo mode at 5 GHz (up to 108 Mb/s)" },
+  { IW_MODUL_TURBO | IW_MODUL_11G, "turbog",
+    "Atheros turbo mode at 2.4 GHz (up to 108 Mb/s)" },
+  { IW_MODUL_PBCC | IW_MODUL_11B, "11+",
+    "TI 802.11+ (2.4 GHz, up to 22 Mb/s)" },
+
+  /* Individual modulations */
+  { IW_MODUL_OFDM_G, "OFDMg",
+    "802.11g higher rates, OFDM at 2.4 GHz (up to 54 Mb/s)" },
+  { IW_MODUL_OFDM_A, "OFDMa", "802.11a, OFDM at 5 GHz (up to 54 Mb/s)" },
+  { IW_MODUL_CCK, "CCK", "802.11b higher rates (2.4 GHz, up to 11 Mb/s)" },
+  { IW_MODUL_DS, "DS", "802.11 Direct Sequence (2.4 GHz, up to 2 Mb/s)" },
+  { IW_MODUL_FH, "FH", "802.11 Frequency Hopping (2,4 GHz, up to 2 Mb/s)" },
+
+  /* Proprietary modulations */
+  { IW_MODUL_TURBO, "turbo",
+    "Atheros turbo mode, channel bonding (up to 108 Mb/s)" },
+  { IW_MODUL_PBCC, "PBCC",
+    "TI 802.11+ higher rates (2.4 GHz, up to 22 Mb/s)" },
+  { IW_MODUL_CUSTOM, "custom",
+    "Driver specific modulation (check driver documentation)" },
+};
 #ifdef __cplusplus
 }
 #endif
