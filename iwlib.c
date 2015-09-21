@@ -26,131 +26,13 @@
 #define IW15_MAX_AP		8
 
 /****************************** TYPES ******************************/
-
-/*
- *	Struct iw_range up to WE-15
- */
-struct	iw15_range
-{
-	__u32		throughput;
-	__u32		min_nwid;
-	__u32		max_nwid;
-	__u16		num_channels;
-	__u8		num_frequency;
-	struct iw_freq	freq[IW15_MAX_FREQUENCIES];
-	__s32		sensitivity;
-	struct iw_quality	max_qual;
-	__u8		num_bitrates;
-	__s32		bitrate[IW15_MAX_BITRATES];
-	__s32		min_rts;
-	__s32		max_rts;
-	__s32		min_frag;
-	__s32		max_frag;
-	__s32		min_pmp;
-	__s32		max_pmp;
-	__s32		min_pmt;
-	__s32		max_pmt;
-	__u16		pmp_flags;
-	__u16		pmt_flags;
-	__u16		pm_capa;
-	__u16		encoding_size[IW15_MAX_ENCODING_SIZES];
-	__u8		num_encoding_sizes;
-	__u8		max_encoding_tokens;
-	__u16		txpower_capa;
-	__u8		num_txpower;
-	__s32		txpower[IW15_MAX_TXPOWER];
-	__u8		we_version_compiled;
-	__u8		we_version_source;
-	__u16		retry_capa;
-	__u16		retry_flags;
-	__u16		r_time_flags;
-	__s32		min_retry;
-	__s32		max_retry;
-	__s32		min_r_time;
-	__s32		max_r_time;
-	struct iw_quality	avg_qual;
-};
-
-/*
- * Union for all the versions of iwrange.
- * Fortunately, I mostly only add fields at the end, and big-bang
- * reorganisations are few.
- */
-union	iw_range_raw
-{
-	struct iw15_range	range15;	/* WE 9->15 */
-	struct iw_range		range;		/* WE 16->current */
-};
-
-/*
- * Offsets in iw_range struct
- */
-#define iwr15_off(f)	( ((char *) &(((struct iw15_range *) NULL)->f)) - \
-			  (char *) NULL)
-#define iwr_off(f)	( ((char *) &(((struct iw_range *) NULL)->f)) - \
-			  (char *) NULL)
-
-/*
- * Union to perform unaligned access when working around alignement issues
- */
-union	iw_align_u16
-{
-	__u16		value;
-	unsigned char	byte[2];
-};
-
-/**************************** VARIABLES ****************************/
-
-/* Modes as human readable strings */
-const char * const iw_operation_mode[] = { "Auto",
-					"Ad-Hoc",
-					"Managed",
-					"Master",
-					"Repeater",
-					"Secondary",
-					"Monitor",
-					"Unknown/bug" };
-
-/* Modulations as human readable strings */
-const struct iw_modul_descr	iw_modul_list[] = {
-  /* Start with aggregate types, so that they display first */
-  { IW_MODUL_11AG, "11ag",
-    "IEEE 802.11a + 802.11g (2.4 & 5 GHz, up to 54 Mb/s)" },
-  { IW_MODUL_11AB, "11ab",
-    "IEEE 802.11a + 802.11b (2.4 & 5 GHz, up to 54 Mb/s)" },
-  { IW_MODUL_11G, "11g", "IEEE 802.11g (2.4 GHz, up to 54 Mb/s)" },
-  { IW_MODUL_11A, "11a", "IEEE 802.11a (5 GHz, up to 54 Mb/s)" },
-  { IW_MODUL_11B, "11b", "IEEE 802.11b (2.4 GHz, up to 11 Mb/s)" },
-
-  /* Proprietary aggregates */
-  { IW_MODUL_TURBO | IW_MODUL_11A, "turboa",
-    "Atheros turbo mode at 5 GHz (up to 108 Mb/s)" },
-  { IW_MODUL_TURBO | IW_MODUL_11G, "turbog",
-    "Atheros turbo mode at 2.4 GHz (up to 108 Mb/s)" },
-  { IW_MODUL_PBCC | IW_MODUL_11B, "11+",
-    "TI 802.11+ (2.4 GHz, up to 22 Mb/s)" },
-
-  /* Individual modulations */
-  { IW_MODUL_OFDM_G, "OFDMg",
-    "802.11g higher rates, OFDM at 2.4 GHz (up to 54 Mb/s)" },
-  { IW_MODUL_OFDM_A, "OFDMa", "802.11a, OFDM at 5 GHz (up to 54 Mb/s)" },
-  { IW_MODUL_CCK, "CCK", "802.11b higher rates (2.4 GHz, up to 11 Mb/s)" },
-  { IW_MODUL_DS, "DS", "802.11 Direct Sequence (2.4 GHz, up to 2 Mb/s)" },
-  { IW_MODUL_FH, "FH", "802.11 Frequency Hopping (2,4 GHz, up to 2 Mb/s)" },
-
-  /* Proprietary modulations */
-  { IW_MODUL_TURBO, "turbo",
-    "Atheros turbo mode, channel bonding (up to 108 Mb/s)" },
-  { IW_MODUL_PBCC, "PBCC",
-    "TI 802.11+ higher rates (2.4 GHz, up to 22 Mb/s)" },
-  { IW_MODUL_CUSTOM, "custom",
-    "Driver specific modulation (check driver documentation)" },
-};
-
 /* Disable runtime version warning in iw_get_range_info() */
 int	iw_ignore_version = 0;
 
 /************************ SOCKET SUBROUTINES *************************/
+/*
+ *	Struct iw_range up to WE-15
+ */
 
 /*------------------------------------------------------------------*/
 /*
@@ -158,14 +40,16 @@ int	iw_ignore_version = 0;
  * Depending on the protocol present, open the right socket. The socket
  * will allow us to talk to the driver.
  */
+ 
+  unsigned int	i;
+  int		sock;
 int
 iw_sockets_open(void)
 {
   static const int families[] = {
     AF_INET, AF_IPX, AF_AX25, AF_APPLETALK
   };
-  unsigned int	i;
-  int		sock;
+ 
 
   /*
    * Now pick any (exisiting) useful socket family for generic queries
@@ -197,7 +81,7 @@ iw_get_ifname(char *	name,	/* Where to store the name */
 	      int	nsize,	/* Size of name buffer */
 	      char *	buf)	/* Current position in buffer */
 {
-  char *	end;
+  char *	end = NULL;
 
   /* Skip leading spaces */
   while(isspace(*buf))
@@ -242,7 +126,7 @@ iw_enum_devices(int		skfd,
 		int		count)
 {
   char		buff[1024];
-  FILE *	fh;
+  FILE *	fh =NULL;
   struct ifconf ifc;
   struct ifreq *ifr;
   int		i;
@@ -485,7 +369,7 @@ iw_get_range_info(int		skfd,
 
   /* Cleanup */
   bzero(buffer, sizeof(buffer));
-
+  memset((struct iwreq *)&wrq , 0, sizeof(struct iwreq);
   wrq.u.data.pointer = (caddr_t) buffer;
   wrq.u.data.length = sizeof(buffer);
   wrq.u.data.flags = 0;
@@ -557,7 +441,7 @@ iw_get_range_info(int		skfd,
       /* We don't like very old version (unfortunately kernel 2.2.X) */
       if(range->we_version_compiled <= 10)
 	{
-	  fprintf(stderr, "Warning: Driver for device %s has been compiled with an ancient version\n", ifname);
+	  fprintf(stderr, "Error: Driver for device %s has been compiled with an ancient version\n", ifname);
 	  fprintf(stderr, "of Wireless Extension, while this program support version 11 and later.\n");
 	  fprintf(stderr, "Some things may be broken...\n\n");
 	}
@@ -566,7 +450,7 @@ iw_get_range_info(int		skfd,
        * the unknown */
       if(range->we_version_compiled > WE_MAX_VERSION)
 	{
-	  fprintf(stderr, "Warning: Driver for device %s has been compiled with version %d\n", ifname, range->we_version_compiled);
+	  fprintf(stderr, "Error: Driver for device %s has been compiled with version %d\n", ifname, range->we_version_compiled);
 	  fprintf(stderr, "of Wireless Extension, while this program supports up to version %d.\n", WE_MAX_VERSION);
 	  fprintf(stderr, "Some things may be broken...\n\n");
 	}
@@ -575,7 +459,7 @@ iw_get_range_info(int		skfd,
       if((range->we_version_compiled > 10) &&
 	 (range->we_version_compiled < range->we_version_source))
 	{
-	  fprintf(stderr, "Warning: Driver for device %s recommend version %d of Wireless Extension,\n", ifname, range->we_version_source);
+	  fprintf(stderr, "Error: Driver for device %s recommend version %d of Wireless Extension,\n", ifname, range->we_version_source);
 	  fprintf(stderr, "but has been compiled with version %d, therefore some driver features\n", range->we_version_compiled);
 	  fprintf(stderr, "may not be available...\n\n");
 	}
@@ -624,7 +508,7 @@ iw_get_priv_info(int		skfd,
 	  break;
 	}
       priv = newpriv;
-
+      memset((struct iwreq *)&wrq , 0, sizeof(struct iwreq);
       /* Ask the driver if it's large enough */
       wrq.u.data.pointer = (caddr_t) priv;
       wrq.u.data.length = maxpriv;
@@ -675,7 +559,7 @@ iw_get_basic_config(int			skfd,
 		    wireless_config *	info)
 {
   struct iwreq		wrq;
-
+  memset((struct iwreq *)&wrq , 0, sizeof(struct iwreq);
   memset((char *) info, 0, sizeof(struct wireless_config));
 
   /* Get wireless name */
@@ -702,7 +586,7 @@ iw_get_basic_config(int			skfd,
       info->freq = iw_freq2float(&(wrq.u.freq));
       info->freq_flags = wrq.u.freq.flags;
     }
-
+   
   /* Get encryption information */
   wrq.u.data.pointer = (caddr_t) info->key;
   wrq.u.data.length = IW_ENCODING_TOKEN_MAX;
@@ -753,7 +637,7 @@ iw_set_basic_config(int			skfd,
 {
   struct iwreq		wrq;
   int			ret = 0;
-
+  memset((struct iwreq *)&wrq , 0, sizeof(struct iwreq);  
   /* Get wireless name (check if interface is valid) */
   if(iw_get_ext(skfd, ifname, SIOCGIWNAME, &wrq) < 0)
     /* If no wireless name : no wireless extensions */
@@ -1690,7 +1574,13 @@ iw_in_key(const char *		input,
 	  unsigned char *	key)
 {
   int		keylen = 0;
-
+   int	temph;
+	    int	templ;
+	    int	count;
+        const char *	p= NULL;
+	int		dlen;	/* Digits sequence length */
+	unsigned char	out[IW_ENCODING_TOKEN_MAX];
+	    
   /* Check the type of key */
   if(!strncmp(input, "s:", 2))
     {
@@ -1707,21 +1597,14 @@ iw_in_key(const char *		input,
 	return(iw_pass_key(input + 2, key));		/* skip "p:" */
       }
     else
-      {
-	const char *	p;
-	int		dlen;	/* Digits sequence length */
-	unsigned char	out[IW_ENCODING_TOKEN_MAX];
-
-	/* Third case : as hexadecimal digits */
+      {	/* Third case : as hexadecimal digits */
 	p = input;
 	dlen = -1;
 
 	/* Loop until we run out of chars in input or overflow the output */
 	while(*p != '\0')
 	  {
-	    int	temph;
-	    int	templ;
-	    int	count;
+	   
 	    /* No more chars in this sequence */
 	    if(dlen <= 0)
 	      {
@@ -1783,12 +1666,13 @@ iw_in_key_full(int		skfd,
 	       unsigned char *	key,
 	       __u16 *		flags)
 {
+   struct iw_range	range;	
   int		keylen = 0;
   char *	p;
 
   if(!strncmp(input, "l:", 2))
     {
-      struct iw_range	range;
+      
 
       /* Extra case : as a login (user:passwd - Cisco LEAP) */
       keylen = strlen(input + 2) + 1;		/* skip "l:", add '\0' */
@@ -2057,7 +1941,8 @@ iw_check_mac_addr_type(int		skfd,
 		       const char *	ifname)
 {
   struct ifreq		ifr;
-
+   char buf[20];
+  memset((struct ifreq*)&ifr,0,sizeof(struct ifreq));
   /* Get the type of hardware address */
   strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
   if((ioctl(skfd, SIOCGIFHWADDR, &ifr) < 0) ||
@@ -2072,7 +1957,7 @@ iw_check_mac_addr_type(int		skfd,
 
 #ifdef DEBUG
   {
-    char buf[20];
+   
     printf("Hardware : %d - %s\n", ifr.ifr_hwaddr.sa_family,
 	   iw_saether_ntop(&ifr.ifr_hwaddr, buf));
   }
@@ -2189,13 +2074,14 @@ iw_mac_aton(const char *	orig,
 {
   const char *	p = orig;
   int		maclen = 0;
+   int	temph;
+      int	templ;
+      int	count;
 
   /* Loop on all bytes of the string */
   while(*p != '\0')
     {
-      int	temph;
-      int	templ;
-      int	count;
+     
       /* Extract one byte as two chars */
       count = sscanf(p, "%1X%1X", &temph, &templ);
       if(count != 2)
